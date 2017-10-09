@@ -1,0 +1,22 @@
+- defaults:
+    name: global
+    project-type: freestyle
+    concurrent: true
+
+    parameters:
+      - string:
+          name: ZUUL_URL
+          description: "The site to fetch the project from."
+      - string:
+          name: ZUUL_PROJECT
+          description: "The project name to be tested."
+      - string:
+          name: ZUUL_BRANCH
+          default: "master"
+          description: "The project's branch."
+      - string:
+          name: ZUUL_REF
+          description: "The commit's reference."
+      - string:
+          name: ZUUL_CHANGES
+          description: "The commit's changes reference."

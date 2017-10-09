@@ -1,0 +1,92 @@
+- builder:
+    name: git-prep
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          CLONEMAP=`mktemp`
+          function cleanup {
+              # In cases where zuul-cloner is aborted during a git
+              # clone operation, git will remove the git work tree in
+              # its cleanup. The work tree in these jobs is the
+              # workspace directory, which means that subsequent
+              # jenkins post-build actions can not run because the
+              # workspace has been removed.
+              # To reduce the likelihood of this having an impact,
+              # recreate the workspace directory if needed
+              mkdir -p $WORKSPACE
+              rm -f $CLONEMAP
+          }
+          trap cleanup EXIT
+          cat > $CLONEMAP << EOF
+          clonemap:
+            - name: $ZUUL_PROJECT
+              dest: .
+          EOF
+          zuul-cloner -m $CLONEMAP --cache-dir /opt/git \
+              $ZUUL_URL $ZUUL_PROJECT
+          fetch_ref=`echo $ZUUL_CHANGES | awk -F ":" '{print $3}'`
+          git fetch origin $fetch_ref ; git checkout FETCH_HEAD
+
+- builder:
+    name: run-tox
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+
+          # If a bundle file is present, call tox with the jenkins version of
+          # the test environment so it is used.  Otherwise, use the normal
+          # (non-bundle) test environment.  Also, run pbr freeze on the
+          # resulting environment at the end so that we have a record of exactly
+          # what packages we ended up testing.
+
+          venv={env}
+
+          bin_path=.tox/$venv/bin
+
+          export PYTHON=$bin_path/python
+          export NOSE_WITH_XUNIT=1
+          export NOSE_WITH_HTML_OUTPUT=1
+          export NOSE_HTML_OUT_FILE='nose_results.html'
+          if [[ -z "$TMPDIR" ]]; then
+              export TMPDIR=$(/bin/mktemp -d)
+          fi
+          trap "rm -rf $TMPDIR" EXIT
+
+          tox -vv -e$venv
+          result=$?
+
+          exit $result
+
+- builder:
+    name: pep8
+    builders:
+      - run-tox:
+          env: pep8
+
+- builder:
+    name: python27
+    builders:
+      - run-tox:
+          env: py27
+
+- builder:
+    name: python35
+    builders:
+      - run-tox:
+          env: py35
+
+- builder:
+    name: assert-no-extra-files
+    builders:
+      - shell: |
+          #!/bin/bash
+          OUT=`git ls-files --other --exclude-standard --directory`
+          if [ -z "$OUT" ]; then
+              echo "No extra files created during test."
+              exit 0
+          else
+              echo "The following un-ignored files were created during the test:"
+              echo "$OUT"
+              exit 0  # TODO: change to 1 to fail tests.
+          fi
+

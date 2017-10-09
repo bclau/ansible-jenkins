@@ -1,0 +1,35 @@
+- job-template:
+    name: "{name}-pep8"
+    defaults: global
+    node: general
+
+    builders:
+      - git-prep
+      - pep8
+
+- job-template:
+    name: '{name}-python27'
+    node: general
+
+    builders:
+      - git-prep
+      - python27
+      - assert-no-extra-files
+
+- job-template:
+    name: '{name}-python35'
+    defaults: global
+    node: general
+
+    builders:
+      - git-prep
+      - python35
+      - assert-no-extra-files
+
+- job-group:
+    name: python-jobs
+
+    jobs:
+      - '{name}-pep8'
+      - '{name}-python27'
+      - '{name}-python35'

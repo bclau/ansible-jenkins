@@ -1,0 +1,28 @@
+- hosts: localhost
+
+  vars:
+    jenkins_version: "2.73.1"
+    jenkins_url: "http://10.7.1.38"
+    jenkins_port: 7070
+    jenkins_home: /data/jenkins3
+    jenkins_java_opts: "-Dhudson.model.ParametersAction.keepUndefinedParameters=true -Djenkins.install.runSetupWizard=false"
+    jenkins_install_via: "docker"
+    jenkins_include_secrets: true
+    jenkins_include_custom_files: true
+    jenkins_custom_files:
+      - src: "hudson.plugins.gearman.GearmanPluginConfig.xml"
+        dest: "hudson.plugins.gearman.GearmanPluginConfig.xml"
+    jenkins_plugins:
+      - git
+      - log-parser
+      - copyartifact
+      - workflow-aggregator
+      - workflow-multibranch
+      - docker-workflow
+      - template-project
+      - gearman-plugin
+      - ssh-slaves
+      
+  roles:
+    - emmetog.jenkins
+
